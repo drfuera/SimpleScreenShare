@@ -1,0 +1,3343 @@
+<!--
+  Praise Lord and God Jesus!
+  There is only one truth. One Word.
+  When you are weak he is strong.
+
+  Phil 2:10
+  ...so that at the name of Jesus every knee will bow, in heaven and on earth and under the earth.
+
+  John 20:29
+  Blessed are those who have not seen and yet have believed.
+-->
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Screen Sharing</title>
+        <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+        />
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+
+            body {
+                font-family:
+                    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                    sans-serif;
+                background: #0a0e13;
+                color: #fff;
+                overflow: hidden;
+                height: 100vh;
+            }
+
+            .main {
+                display: flex;
+                height: 100vh;
+            }
+
+            .video-section {
+                flex: 1;
+                position: relative;
+                background: #000;
+                overflow: hidden;
+                transition: margin-right 0.3s ease;
+            }
+
+            body:not(.ui-hidden) .video-section {
+                margin-right: 380px;
+            }
+
+            .video-container {
+                width: 100%;
+                height: 100%;
+                position: relative;
+                overflow: hidden;
+            }
+
+            video {
+                width: 100%;
+                height: 100%;
+                object-fit: contain;
+                transform-origin: center center;
+                transition: transform 0.1s ease-out;
+            }
+
+            video.pannable {
+                cursor: grab;
+            }
+
+            video.pannable:active {
+                cursor: grabbing;
+            }
+
+            .video-placeholder {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                background: radial-gradient(
+                    circle at center,
+                    #0f1419 0%,
+                    #000 100%
+                );
+                z-index: 1;
+            }
+
+            .video-placeholder.hidden {
+                display: none;
+            }
+
+            .video-placeholder i {
+                font-size: 4rem;
+                color: #6366f1;
+                margin-bottom: 1.5rem;
+                opacity: 0.8;
+            }
+
+            .video-placeholder h2 {
+                font-size: 1.25rem;
+                margin-bottom: 0.5rem;
+                color: #fff;
+                font-weight: 600;
+            }
+
+            .video-placeholder p {
+                font-size: 0.95rem;
+                color: #6b7280;
+            }
+
+            .draw-canvas {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                pointer-events: none;
+                z-index: 10;
+                transform-origin: center center;
+                transition: transform 0.1s ease-out;
+            }
+
+            .draw-canvas.active {
+                pointer-events: all;
+                cursor: crosshair;
+            }
+
+            .video-toolbar {
+                position: absolute;
+                top: 1rem;
+                right: 1rem;
+                display: flex;
+                flex-direction: column;
+                gap: 0.5rem;
+                z-index: 20;
+                opacity: 1;
+                transform: translateX(0);
+                transition:
+                    opacity 0.3s ease,
+                    transform 0.3s ease;
+            }
+
+            .video-toolbar::before {
+                content: "";
+                position: absolute;
+                right: -10px;
+                top: 50%;
+                transform: translateY(-50%);
+                width: 4px;
+                height: 60px;
+                background: rgba(99, 102, 241, 0.3);
+                border-radius: 2px 0 0 2px;
+                opacity: 0;
+                transition: opacity 0.3s ease;
+                pointer-events: all;
+            }
+
+            .video-toolbar.auto-hidden {
+                opacity: 0;
+                transform: translateX(80px);
+                pointer-events: none;
+            }
+
+            .video-toolbar.auto-hidden::before {
+                opacity: 1;
+                pointer-events: all;
+            }
+
+            .video-toolbar.auto-hidden.show-on-hover {
+                opacity: 1;
+                transform: translateX(0);
+                pointer-events: all;
+            }
+
+            .video-toolbar.auto-hidden.show-on-hover::before {
+                opacity: 0;
+            }
+
+            body.ui-hidden .video-toolbar {
+            }
+
+            .tool-btn {
+                width: 42px;
+                height: 42px;
+                background: rgba(26, 31, 46, 0.95);
+                backdrop-filter: blur(10px);
+                border: 1px solid rgba(99, 102, 241, 0.2);
+                border-radius: 8px;
+                color: #6b7280;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.2s;
+                font-size: 1rem;
+            }
+
+            .tool-btn:hover {
+                background: rgba(26, 31, 46, 1);
+                color: #fff;
+                border-color: #6366f1;
+                transform: scale(1.05);
+            }
+
+            .tool-btn.active {
+                background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+                color: white;
+                border-color: #6366f1;
+                box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+            }
+
+            .zoom-info {
+                position: absolute;
+                bottom: 1rem;
+                left: 50%;
+                transform: translateX(-50%);
+                background: rgba(26, 31, 46, 0.95);
+                backdrop-filter: blur(10px);
+                padding: 0.5rem 1rem;
+                border-radius: 6px;
+                font-size: 0.875rem;
+                color: #9ca3af;
+                border: 1px solid rgba(99, 102, 241, 0.2);
+                opacity: 0;
+                transition: opacity 0.3s;
+                z-index: 20;
+            }
+
+            .zoom-info.show {
+                opacity: 1;
+            }
+
+            .side-panel {
+                width: 380px;
+                background: linear-gradient(135deg, #1a1f2e 0%, #151925 100%);
+                border-left: 1px solid rgba(99, 102, 241, 0.2);
+                display: flex;
+                flex-direction: column;
+                overflow-y: auto;
+                position: fixed;
+                right: 0;
+                top: 0;
+                bottom: 0;
+                z-index: 90;
+                transition:
+                    transform 0.3s ease,
+                    opacity 0.3s ease;
+            }
+
+            body.ui-hidden .side-panel {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            .sidebar-header {
+                padding: 1rem;
+                border-bottom: 1px solid rgba(99, 102, 241, 0.2);
+                display: flex;
+                flex-direction: column;
+                gap: 0.75rem;
+                background: linear-gradient(135deg, #1a1f2e 0%, #0f1419 100%);
+            }
+
+            .sidebar-top {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .logo {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                font-size: 0.95rem;
+                font-weight: 600;
+                color: #6366f1;
+            }
+
+            .logo i {
+                font-size: 1.1rem;
+            }
+
+            .help-button {
+                background: rgba(255, 255, 255, 0.03);
+                border: 1px solid rgba(255, 255, 255, 0.08);
+                color: #6b7280;
+                padding: 0.4rem 0.8rem;
+                border-radius: 6px;
+                cursor: pointer;
+                transition: all 0.2s;
+                display: flex;
+                align-items: center;
+                gap: 0.4rem;
+                font-size: 0.8rem;
+            }
+
+            .help-button:hover {
+                border-color: #6366f1;
+                color: #6366f1;
+                background: rgba(99, 102, 241, 0.05);
+            }
+
+            .mode-switcher {
+                display: flex;
+                gap: 0.5rem;
+                background: rgba(255, 255, 255, 0.03);
+                padding: 0.25rem;
+                border-radius: 8px;
+                border: 1px solid rgba(255, 255, 255, 0.05);
+            }
+
+            .mode-btn {
+                flex: 1;
+                padding: 0.5rem;
+                border: none;
+                background: transparent;
+                color: #6b7280;
+                cursor: pointer;
+                border-radius: 6px;
+                font-weight: 500;
+                transition: all 0.2s;
+                font-size: 0.85rem;
+            }
+
+            .mode-btn:hover {
+                color: #fff;
+                background: rgba(255, 255, 255, 0.05);
+            }
+
+            .mode-btn.active {
+                background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+                color: white;
+                box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+            }
+
+            .panel-content {
+                display: none;
+                flex-direction: column;
+                height: 100%;
+            }
+
+            .panel-content.active {
+                display: flex;
+            }
+
+            .panel-section {
+                padding: 1.5rem;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            }
+
+            .connection-item {
+                background: rgba(255, 255, 255, 0.02);
+                border: 1px solid rgba(99, 102, 241, 0.1);
+                border-radius: 8px;
+                margin-bottom: 1rem;
+            }
+
+            .connection-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .connection-header .section-title {
+                margin-bottom: 0;
+                color: #e5e7eb;
+                font-size: 1rem;
+            }
+
+            .connection-status {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                margin-bottom: 1rem;
+                padding: 0.5rem;
+                background: rgba(0, 0, 0, 0.2);
+                border-radius: 6px;
+            }
+
+            .status-indicator {
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+                background: #6b7280;
+                margin-right: 0.5rem;
+            }
+
+            .status-indicator.connected {
+                background: #10b981;
+            }
+
+            .status-indicator.ready {
+                background: #f59e0b;
+            }
+
+            .status-indicator.disconnected {
+                background: #6b7280;
+            }
+
+            .status-indicator.error {
+                background: #ef4444;
+            }
+
+            .status-text {
+                display: none;
+            }
+
+            .connection-controls {
+                display: block;
+            }
+
+            .connection-controls .compact-row {
+                margin-bottom: 0.5rem;
+            }
+
+            .section-title {
+                font-size: 0.875rem;
+                font-weight: 600;
+                color: #9ca3af;
+                margin-bottom: 1rem;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+            }
+
+            .compact-row {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                background: rgba(255, 255, 255, 0.03);
+                border: 1px solid rgba(255, 255, 255, 0.08);
+                border-radius: 8px;
+                padding: 0.75rem;
+                margin-bottom: 0.75rem;
+            }
+
+            .compact-text {
+                flex: 1;
+                font-family: "Courier New", monospace;
+                font-size: 0.75rem;
+                color: #e5e7eb;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                user-select: none;
+            }
+
+            input.compact-text,
+            textarea.compact-text {
+                border: none;
+                background: transparent;
+                outline: none;
+                cursor: default;
+                user-select: text;
+                resize: none;
+                font-family: "Courier New", monospace;
+                font-size: 0.75rem;
+                color: #e5e7eb;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            input.compact-text:focus,
+            textarea.compact-text:focus {
+                user-select: text;
+            }
+
+            .compact-text.empty {
+                color: #9ca3af;
+                font-style: italic;
+            }
+
+            .compact-btn {
+                background: rgba(99, 102, 241, 0.1);
+                border: 1px solid rgba(99, 102, 241, 0.3);
+                color: #6366f1;
+                padding: 0.5rem 0.75rem;
+                border-radius: 6px;
+                cursor: pointer;
+                transition: all 0.2s;
+                display: flex;
+                align-items: center;
+                gap: 0.4rem;
+                font-size: 0.85rem;
+                white-space: nowrap;
+                font-weight: 500;
+            }
+
+            .compact-btn:hover:not(:disabled) {
+                background: rgba(99, 102, 241, 0.2);
+                border-color: rgba(99, 102, 241, 0.5);
+            }
+
+            .compact-btn:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+            }
+
+            .compact-btn i {
+                font-size: 0.9rem;
+            }
+
+            .action-button {
+                width: 100%;
+                padding: 0.75rem 1rem;
+                border: none;
+                border-radius: 8px;
+                font-weight: 500;
+                font-size: 0.95rem;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 0.5rem;
+                transition: all 0.2s;
+                margin-bottom: 0.75rem;
+            }
+
+            .btn-success {
+                background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+                color: white;
+                box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+            }
+
+            .btn-success:hover:not(:disabled) {
+                transform: translateY(-1px);
+                box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+            }
+
+            .btn-danger {
+                background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+                color: white;
+                box-shadow: 0 2px 8px rgba(239, 68, 68, 0.2);
+            }
+
+            .btn-danger:hover:not(:disabled) {
+                background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+            }
+
+            .btn-primary {
+                background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+                color: white;
+                box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+            }
+
+            .btn-primary:hover:not(:disabled) {
+                transform: translateY(-1px);
+                box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
+            }
+
+            .action-button:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+                transform: none !important;
+            }
+
+            .button-group {
+                display: flex;
+                gap: 0.5rem;
+                margin-bottom: 0.75rem;
+            }
+
+            .button-group .action-button {
+                flex: 1;
+                margin-bottom: 0;
+            }
+
+            .connection-item {
+                background: rgba(0, 0, 0, 0.3);
+                border: 1px solid rgba(255, 255, 255, 0.05);
+                border-radius: 8px;
+                padding: 0.75rem;
+                margin-bottom: 0.5rem;
+            }
+
+            .connection-controls {
+                margin-top: 0.75rem;
+            }
+
+            .code-label {
+                color: #9ca3af;
+                font-size: 0.875rem;
+                margin-bottom: 0.5rem;
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+            }
+
+            .code-box {
+                position: relative;
+            }
+
+            .code-box textarea {
+                width: 100%;
+                min-height: 120px;
+                background: rgba(0, 0, 0, 0.5);
+                border: 1px solid rgba(99, 102, 241, 0.2);
+                border-radius: 6px;
+                color: #e5e7eb;
+                padding: 0.75rem;
+                font-family: "Courier New", monospace;
+                font-size: 0.85rem;
+                resize: vertical;
+                margin-bottom: 0.75rem;
+            }
+
+            .code-box textarea:focus {
+                outline: none;
+                border-color: #6366f1;
+            }
+
+            .copy-indicator {
+                position: absolute;
+                top: 0.5rem;
+                right: 0.5rem;
+                background: #10b981;
+                color: white;
+                padding: 0.25rem 0.75rem;
+                border-radius: 4px;
+                font-size: 0.75rem;
+                opacity: 0;
+                transform: translateY(-5px);
+                transition: all 0.3s;
+                pointer-events: none;
+            }
+
+            .copy-indicator.show {
+                opacity: 1;
+                transform: translateY(0);
+            }
+
+            .fps-grid {
+                display: grid;
+                grid-template-columns: 1fr 1fr 1fr;
+                gap: 0.75rem;
+                margin-bottom: 1rem;
+            }
+
+            .fps-option {
+                background: rgba(255, 255, 255, 0.03);
+                border: 1px solid rgba(255, 255, 255, 0.08);
+                border-radius: 8px;
+                padding: 1rem;
+                cursor: pointer;
+                transition: all 0.2s;
+                text-align: center;
+            }
+
+            .fps-option:hover {
+                background: rgba(255, 255, 255, 0.05);
+                border-color: #6366f1;
+            }
+
+            .fps-option.active {
+                background: rgba(99, 102, 241, 0.1);
+                border-color: #6366f1;
+                box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+            }
+
+            .fps-label {
+                font-weight: 600;
+                color: #e5e7eb;
+                font-size: 0.95rem;
+            }
+
+            .stats-grid {
+                display: grid;
+                grid-template-columns: repeat(4, 1fr);
+                gap: 0.5rem;
+            }
+
+            .stat-item {
+                background: rgba(0, 0, 0, 0.3);
+                border: 1px solid rgba(255, 255, 255, 0.05);
+                border-radius: 6px;
+                padding: 0.6rem 0.5rem;
+            }
+
+            .stat-label {
+                font-size: 0.7rem;
+                color: #6b7280;
+                margin-bottom: 0.25rem;
+            }
+
+            .stat-value {
+                font-size: 0.95rem;
+                font-weight: 600;
+                color: #e5e7eb;
+            }
+
+            .stat-value.good {
+                color: #10b981;
+            }
+            .stat-value.warning {
+                color: #f59e0b;
+            }
+            .stat-value.bad {
+                color: #ef4444;
+            }
+
+            .modal {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.8);
+                backdrop-filter: blur(8px);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 1000;
+                opacity: 0;
+                visibility: hidden;
+                transition: all 0.3s;
+            }
+
+            .modal.show {
+                opacity: 1;
+                visibility: visible;
+            }
+
+            .modal-content {
+                background: linear-gradient(135deg, #1a1f2e 0%, #151925 100%);
+                border: 1px solid rgba(99, 102, 241, 0.2);
+                border-radius: 12px;
+                padding: 2rem;
+                max-width: 500px;
+                width: 90%;
+                max-height: 80vh;
+                overflow-y: auto;
+                transform: scale(0.9);
+                transition: transform 0.3s;
+            }
+
+            .modal.show .modal-content {
+                transform: scale(1);
+            }
+
+            .modal-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 1.5rem;
+                padding-bottom: 1rem;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            }
+
+            .modal-title {
+                font-size: 1.25rem;
+                font-weight: 600;
+                color: #fff;
+            }
+
+            .close-btn {
+                background: rgba(255, 255, 255, 0.03);
+                border: 1px solid rgba(255, 255, 255, 0.08);
+                color: #6b7280;
+                width: 32px;
+                height: 32px;
+                border-radius: 6px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.2s;
+            }
+
+            .close-btn:hover {
+                background: rgba(239, 68, 68, 0.1);
+                border-color: #ef4444;
+                color: #ef4444;
+            }
+
+            .shortcut-item {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 0.75rem;
+                background: rgba(255, 255, 255, 0.03);
+                border-radius: 6px;
+                margin-bottom: 0.5rem;
+            }
+
+            .shortcut-label {
+                color: #d1d5db;
+                font-size: 0.9rem;
+            }
+
+            .shortcut-key {
+                background: rgba(0, 0, 0, 0.5);
+                border: 1px solid rgba(99, 102, 241, 0.3);
+                padding: 0.25rem 0.75rem;
+                border-radius: 4px;
+                font-family: "Courier New", monospace;
+                font-size: 0.85rem;
+                color: #6366f1;
+            }
+
+            .notification {
+                position: fixed;
+                bottom: 2rem;
+                right: 2rem;
+                background: rgba(26, 31, 46, 0.95);
+                backdrop-filter: blur(10px);
+                border: 1px solid rgba(99, 102, 241, 0.3);
+                color: white;
+                padding: 1rem 1.5rem;
+                border-radius: 8px;
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+                transform: translateY(100px);
+                opacity: 0;
+                transition: all 0.3s;
+                z-index: 2000;
+            }
+
+            .notification.show {
+                transform: translateY(0);
+                opacity: 1;
+            }
+
+            .notification.success {
+                border-color: rgba(16, 185, 129, 0.5);
+            }
+
+            .notification.success i {
+                color: #10b981;
+            }
+
+            .notification.error {
+                border-color: rgba(239, 68, 68, 0.5);
+            }
+
+            .notification.error i {
+                color: #ef4444;
+            }
+
+            ::-webkit-scrollbar {
+                width: 8px;
+            }
+
+            ::-webkit-scrollbar-track {
+                background: rgba(0, 0, 0, 0.2);
+            }
+
+            ::-webkit-scrollbar-thumb {
+                background: rgba(99, 102, 241, 0.3);
+                border-radius: 4px;
+            }
+
+            ::-webkit-scrollbar-thumb:hover {
+                background: rgba(99, 102, 241, 0.5);
+            }
+
+            @media (max-width: 768px) {
+                .side-panel {
+                    width: 100%;
+                }
+
+                body:not(.ui-hidden) .video-section {
+                    margin-right: 0;
+                }
+
+                .quality-grid {
+                    grid-template-columns: 1fr;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <!-- Header -->
+        <!-- Main Content -->
+        <div class="main">
+            <!-- Video Section -->
+            <div class="video-section">
+                <div class="video-container" id="videoContainer">
+                    <div class="video-placeholder" id="placeholder">
+                        <i class="fas fa-desktop"></i>
+                        <h2>No screen sharing active</h2>
+                        <p>Start sharing to begin</p>
+                    </div>
+                    <video id="remoteVideo" autoplay playsinline></video>
+                    <canvas class="draw-canvas" id="drawCanvas"></canvas>
+
+                    <!-- Toolbar -->
+                    <div class="video-toolbar" id="toolbar">
+                        <button
+                            class="tool-btn"
+                            id="pointerBtn"
+                            title="Pointer (P)"
+                        >
+                            <i class="fas fa-hand-pointer"></i>
+                        </button>
+                        <button class="tool-btn" id="drawBtn" title="Draw (R)">
+                            <i class="fas fa-pen"></i>
+                        </button>
+                        <button
+                            class="tool-btn"
+                            id="clearBtn"
+                            title="Clear (C)"
+                        >
+                            <i class="fas fa-eraser"></i>
+                        </button>
+                        <button
+                            class="tool-btn"
+                            id="fullscreenBtn"
+                            title="Fullscreen (F11)"
+                        >
+                            <i class="fas fa-expand"></i>
+                        </button>
+                        <button
+                            class="tool-btn"
+                            id="zoomInBtn"
+                            title="Zoom in (+)"
+                        >
+                            <i class="fas fa-plus"></i>
+                        </button>
+                        <button
+                            class="tool-btn"
+                            id="zoomOutBtn"
+                            title="Zoom out (-)"
+                        >
+                            <i class="fas fa-minus"></i>
+                        </button>
+                        <button
+                            class="tool-btn"
+                            id="resetZoomBtn"
+                            title="Reset zoom (0)"
+                        >
+                            <i class="fas fa-undo"></i>
+                        </button>
+                    </div>
+
+                    <div class="zoom-info" id="zoomInfo">Zoom: 100%</div>
+                </div>
+            </div>
+
+            <!-- Side Panel -->
+            <div class="side-panel">
+                <!-- Sidebar Header -->
+                <div class="sidebar-header">
+                    <div class="sidebar-top">
+                        <div class="logo">
+                            <i class="fas fa-desktop"></i>
+                            <span>Screen Sharing</span>
+                        </div>
+                        <button class="help-button" onclick="showHelp()">
+                            <i class="fas fa-question-circle"></i>
+                            <span>Help</span>
+                        </button>
+                    </div>
+                    <div class="mode-switcher">
+                        <button class="mode-btn active" id="hostModeBtn">
+                            Host
+                        </button>
+                        <button class="mode-btn" id="viewerModeBtn">
+                            Viewer
+                        </button>
+                    </div>
+                </div>
+
+                <!-- HOST PANEL -->
+                <div class="panel-content active" id="hostPanel">
+                    <div class="panel-section">
+                        <h3 class="section-title">Sharing</h3>
+                        <div class="button-group">
+                            <button
+                                class="action-button btn-success"
+                                id="startSharingBtn"
+                            >
+                                <i class="fas fa-play"></i>
+                                Start Sharing
+                            </button>
+                            <button
+                                class="action-button btn-danger"
+                                id="stopSharingBtn"
+                                disabled
+                            >
+                                <i class="fas fa-stop"></i>
+                                Stop Sharing
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="panel-section" id="newConnectionSection">
+                        <h3 class="section-title">New Connection</h3>
+                        <div class="compact-row">
+                            <input
+                                type="text"
+                                class="compact-text empty"
+                                id="newConnectionName"
+                                placeholder="Enter connection name..."
+                            />
+                            <button
+                                class="compact-btn"
+                                id="addConnectionBtn"
+                                onclick="addNewConnection()"
+                            >
+                                <i class="fas fa-plus"></i>
+                                Add
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="connectionsContainer">
+                        <!-- Dynamic connections will be added here -->
+                    </div>
+
+                    <div class="panel-section">
+                        <h3 class="section-title">Frame Rate (FPS)</h3>
+                        <div class="fps-grid">
+                            <div class="fps-option active" data-fps="30">
+                                <div class="fps-label">30 FPS</div>
+                            </div>
+                            <div class="fps-option" data-fps="15">
+                                <div class="fps-label">15 FPS</div>
+                            </div>
+                            <div class="fps-option" data-fps="5">
+                                <div class="fps-label">5 FPS</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="panel-section">
+                        <h3 class="section-title">Statistics</h3>
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <div class="stat-label">Bitrate</div>
+                                <div class="stat-value" id="hostBitrate">
+                                    0 kbps
+                                </div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">FPS</div>
+                                <div class="stat-value" id="hostFps">0 fps</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Latency</div>
+                                <div class="stat-value" id="hostLatency">
+                                    0 ms
+                                </div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Packet Loss</div>
+                                <div class="stat-value" id="hostPacketLoss">
+                                    0 %
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VIEWER PANEL -->
+                <div class="panel-content" id="viewerPanel">
+                    <div class="panel-section" id="viewerOfferSection">
+                        <h3 class="section-title">Connect to Host</h3>
+                        <div class="connection-controls">
+                            <div class="compact-row">
+                                <textarea
+                                    class="compact-text empty"
+                                    id="viewerOfferDisplay"
+                                    placeholder="Paste host code here..."
+                                    rows="1"
+                                ></textarea>
+                                <button
+                                    class="compact-btn"
+                                    id="pasteOfferBtn"
+                                    onclick="pasteOfferCompact()"
+                                >
+                                    <i class="fas fa-paste"></i>
+                                    Paste
+                                </button>
+                            </div>
+                            <div
+                                class="compact-row"
+                                style="display: none"
+                                id="viewerAnswerRow"
+                            >
+                                <textarea
+                                    class="compact-text empty"
+                                    id="viewerAnswerDisplay"
+                                    placeholder="Generating answer..."
+                                    rows="1"
+                                    readonly
+                                ></textarea>
+                                <button
+                                    class="compact-btn"
+                                    id="copyAnswerBtn"
+                                    onclick="copyAnswerCompact()"
+                                    disabled
+                                >
+                                    <i class="fas fa-copy"></i>
+                                    Copy Answer
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="panel-section">
+                        <button
+                            class="action-button btn-danger"
+                            id="disconnectBtn"
+                            disabled
+                        >
+                            <i class="fas fa-times"></i>
+                            Disconnect
+                        </button>
+                    </div>
+
+                    <div class="panel-section">
+                        <h3 class="section-title">Statistics</h3>
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <div class="stat-label">Bitrate</div>
+                                <div class="stat-value" id="viewerBitrate">
+                                    0 kbps
+                                </div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">FPS</div>
+                                <div class="stat-value" id="viewerFps">
+                                    0 fps
+                                </div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Latency</div>
+                                <div class="stat-value" id="viewerLatency">
+                                    0 ms
+                                </div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Packet Loss</div>
+                                <div class="stat-value" id="viewerPacketLoss">
+                                    0 %
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Help Modal -->
+        <div class="modal" id="helpModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">Keyboard Shortcuts</h3>
+                    <button class="close-btn" onclick="closeHelp()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-label">Hide/Show UI</span>
+                    <span class="shortcut-key">H</span>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-label">Fullscreen/Exit</span>
+                    <span class="shortcut-key">F11</span>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-label">Exit Fullscreen</span>
+                    <span class="shortcut-key">ESC</span>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-label">Zoom In</span>
+                    <span class="shortcut-key">+</span>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-label">Zoom Out</span>
+                    <span class="shortcut-key">-</span>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-label">Reset Zoom</span>
+                    <span class="shortcut-key">0</span>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-label">Activate Pointer</span>
+                    <span class="shortcut-key">P</span>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-label">Activate Drawing</span>
+                    <span class="shortcut-key">R</span>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-label">Clear Drawing</span>
+                    <span class="shortcut-key">C</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notification -->
+        <div class="notification" id="notification">
+            <i class="fas fa-check-circle"></i>
+            <span id="notificationText">Notification</span>
+        </div>
+
+        <script>
+            let currentMode = "host";
+            let localStream = null;
+            let peerConnection = null;
+            let dataChannel = null;
+            let activeConnections = [];
+            let connectionCounter = 0;
+            const connectionColors = [
+                "#2ecc71", // Host - green
+                "#e74c3c", // Red
+                "#3498db", // Blue
+                "#f39c12", // Orange
+                "#9b59b6", // Purple
+                "#1abc9c", // Turquoise
+                "#d35400", // Dark orange
+                "#c0392b", // Dark red
+                "#16a085", // Dark turquoise
+                "#8e44ad", // Dark purple
+            ];
+            let viewerColorIndex = 1; // Start from first viewer color
+            let viewerSelfColor = connectionColors[1]; // Default color for viewer
+
+            let savedDrawings = [];
+            let currentPath = null;
+            let remotePaths = {};
+
+            const hostPanel = document.getElementById("hostPanel");
+            const viewerPanel = document.getElementById("viewerPanel");
+            const hostModeBtn = document.getElementById("hostModeBtn");
+            const viewerModeBtn = document.getElementById("viewerModeBtn");
+            const placeholder = document.getElementById("placeholder");
+            const video = document.getElementById("remoteVideo");
+            const videoContainer = document.getElementById("videoContainer");
+            const toolbar = document.getElementById("toolbar");
+
+            const startSharingBtn = document.getElementById("startSharingBtn");
+            const stopSharingBtn = document.getElementById("stopSharingBtn");
+
+            const disconnectBtn = document.getElementById("disconnectBtn");
+            const viewerOfferSection =
+                document.getElementById("viewerOfferSection");
+
+            let currentViewerAnswer = "";
+            let currentViewerOffer = "";
+
+            const pointerBtn = document.getElementById("pointerBtn");
+            const drawBtn = document.getElementById("drawBtn");
+            const clearBtn = document.getElementById("clearBtn");
+            const fullscreenBtn = document.getElementById("fullscreenBtn");
+            const zoomInBtn = document.getElementById("zoomInBtn");
+            const zoomOutBtn = document.getElementById("zoomOutBtn");
+            const resetZoomBtn = document.getElementById("resetZoomBtn");
+            const zoomInfo = document.getElementById("zoomInfo");
+
+            const canvas = document.getElementById("drawCanvas");
+            const ctx = canvas.getContext("2d");
+            let isDrawing = false;
+            let isPointerMode = false;
+            let isDrawMode = false;
+
+            let currentZoom = 1;
+            let panX = 0;
+            let panY = 0;
+            let isPanning = false;
+            let startPanX = 0;
+            let startPanY = 0;
+
+            let statsInterval = null;
+            let lastBytesSent = 0;
+            let lastBytesReceived = 0;
+            let lastStatsTime = Date.now();
+
+            const MAX_RECONNECT_ATTEMPTS = 5;
+            let reconnectAttempts = 0;
+
+            let currentFPS = 30;
+
+            let uiVisible = true;
+
+            function toggleUI() {
+                uiVisible = !uiVisible;
+                if (uiVisible) {
+                    document.body.classList.remove("ui-hidden");
+                    showToolbar();
+                    notify("UI visible", "success");
+                } else {
+                    document.body.classList.add("ui-hidden");
+                    notify("UI hidden", "success");
+                }
+
+                setTimeout(() => {
+                    resizeCanvas();
+                    updateVideoTransform();
+                }, 350); // Wait until CSS transition is complete (300ms + margin)
+            }
+
+            let toolbarTimer = null;
+            const TOOLBAR_HIDE_DELAY = 3000; // 3 seconds
+
+            function showToolbar() {
+                toolbar.classList.remove("auto-hidden");
+                toolbar.classList.add("show-on-hover");
+
+                if (toolbarTimer) {
+                    clearTimeout(toolbarTimer);
+                }
+
+                toolbarTimer = setTimeout(() => {
+                    toolbar.classList.add("auto-hidden");
+                    toolbar.classList.remove("show-on-hover");
+                }, TOOLBAR_HIDE_DELAY);
+            }
+
+            function hideToolbarImmediately() {
+                if (toolbarTimer) {
+                    clearTimeout(toolbarTimer);
+                }
+                toolbar.classList.add("auto-hidden");
+                toolbar.classList.remove("show-on-hover");
+            }
+
+            videoContainer.addEventListener("mousemove", showToolbar);
+            videoContainer.addEventListener("mouseenter", showToolbar);
+
+            toolbar.addEventListener("mouseenter", () => {
+                if (toolbarTimer) {
+                    clearTimeout(toolbarTimer);
+                }
+                toolbar.classList.remove("auto-hidden");
+                toolbar.classList.add("show-on-hover");
+            });
+
+            toolbar.addEventListener("mouseleave", () => {
+                toolbarTimer = setTimeout(() => {
+                    toolbar.classList.add("auto-hidden");
+                    toolbar.classList.remove("show-on-hover");
+                }, TOOLBAR_HIDE_DELAY);
+            });
+
+            setTimeout(hideToolbarImmediately, 5000);
+
+            hostModeBtn.addEventListener("click", () => switchMode("host"));
+            viewerModeBtn.addEventListener("click", () => switchMode("viewer"));
+
+            function switchMode(mode) {
+                currentMode = mode;
+
+                if (mode === "host") {
+                    hostPanel.classList.add("active");
+                    viewerPanel.classList.remove("active");
+                    hostModeBtn.classList.add("active");
+                    viewerModeBtn.classList.remove("active");
+                    toolbar.style.display = "flex";
+                } else {
+                    viewerPanel.classList.add("active");
+                    hostPanel.classList.remove("active");
+                    viewerModeBtn.classList.add("active");
+                    hostModeBtn.classList.remove("active");
+                    toolbar.style.display = "flex";
+                }
+
+                if (peerConnection) {
+                    peerConnection.close();
+                    peerConnection = null;
+                }
+
+                if (localStream) {
+                    localStream.getTracks().forEach((track) => track.stop());
+                    localStream = null;
+                }
+
+                video.srcObject = null;
+                placeholder.classList.remove("hidden");
+
+                // Reset startSharingBtn to "Start Sharing" when switching mode
+                startSharingBtn.innerHTML =
+                    '<i class="fas fa-play"></i> Start Sharing';
+                startSharingBtn.disabled = false;
+                stopSharingBtn.disabled = true;
+                disconnectBtn.disabled = true;
+
+                // Enable mode buttons when no connection is active
+                updateModeButtons();
+
+                if (statsInterval) {
+                    clearInterval(statsInterval);
+                    statsInterval = null;
+                }
+            }
+
+            // Multi-connection functions
+            function addNewConnection() {
+                const nameInput = document.getElementById("newConnectionName");
+                const name = nameInput.value.trim();
+
+                if (!name) {
+                    notify("Enter a name for the connection", "error");
+                    return;
+                }
+
+                const connectionId = `connection_${++connectionCounter}`;
+                const connection = {
+                    id: connectionId,
+                    name: name,
+                    status: "disconnected",
+                    peerConnection: null,
+                    dataChannel: null,
+                    offer: "",
+                    answer: "",
+                    color: connectionColors[
+                        viewerColorIndex % connectionColors.length
+                    ],
+                };
+
+                activeConnections.push(connection);
+                createConnectionUI(connection);
+                viewerColorIndex++; // Increase for next viewer
+
+                // Create peer connection directly if screen sharing is active
+                if (localStream) {
+                    createConnectionPeerConnection(connectionId);
+                } else {
+                    // If no sharing is active, update status
+                    updateConnectionStatus(
+                        connectionId,
+                        "disconnected",
+                        "Start sharing first",
+                    );
+                }
+
+                nameInput.value = "";
+                nameInput.classList.add("empty");
+
+                notify(`Connection "${name}" created`, "success");
+            }
+
+            function createConnectionUI(connection) {
+                const container = document.getElementById(
+                    "connectionsContainer",
+                );
+
+                const connectionElement = document.createElement("div");
+                connectionElement.className = "panel-section connection-item";
+                connectionElement.id = connection.id;
+                connectionElement.innerHTML = `
+                    <div class="connection-header">
+                        <div style="display: flex; align-items: center; gap: 0.5rem; flex: 1;">
+                            <span class="status-indicator disconnected"></span>
+                            <h3 class="section-title">${connection.name}</h3>
+                        </div>
+                        <button class="compact-btn btn-danger" onclick="removeConnection('${connection.id}')">
+                            <i class="fas fa-times"></i>
+                            Remove
+                        </button>
+                    </div>
+                    <div class="connection-controls">
+                        <div class="compact-row">
+                            <input type="text" class="compact-text empty" id="${connection.id}_offer" placeholder="Share connection code..." readonly>
+                            <button class="compact-btn" id="${connection.id}_copyOffer" onclick="copyConnectionOffer('${connection.id}')" disabled>
+                                <i class="fas fa-copy"></i>
+                                Copy
+                            </button>
+                        </div>
+                        <div class="compact-row">
+                            <textarea class="compact-text empty" id="${connection.id}_answer" placeholder="Waiting for answer..." rows="1"></textarea>
+                            <button class="compact-btn" id="${connection.id}_pasteAnswer" onclick="pasteConnectionAnswer('${connection.id}')">
+                                <i class="fas fa-paste"></i>
+                                Paste
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+                // Add paste event listener for Ctrl+V support
+                const textarea = connectionElement.querySelector(
+                    `#${connection.id}_answer`,
+                );
+                textarea.addEventListener("paste", async (e) => {
+                    e.preventDefault();
+                    const text = e.clipboardData.getData("text");
+                    if (text && text.trim()) {
+                        await handlePastedAnswer(connection.id, text.trim());
+                    }
+                });
+
+                container.appendChild(connectionElement);
+            }
+
+            function removeConnection(connectionId) {
+                const connection = activeConnections.find(
+                    (c) => c.id === connectionId,
+                );
+                if (!connection) return;
+
+                // Reset color index if possible (for simplicity we let it continue)
+                // viewerColorIndex is kept to avoid color conflicts
+
+                if (
+                    connection.peerConnection &&
+                    connection.peerConnection.connectionState !== "closed"
+                ) {
+                    connection.peerConnection.close();
+                }
+
+                activeConnections = activeConnections.filter(
+                    (c) => c.id !== connectionId,
+                );
+                const element = document.getElementById(connectionId);
+                if (element) {
+                    element.remove();
+                }
+
+                notify(`Connection "${connection.name}" removed`, "success");
+            }
+
+            function updateConnectionStatus(connectionId, status, message) {
+                const connection = activeConnections.find(
+                    (c) => c.id === connectionId,
+                );
+                if (!connection) return;
+
+                connection.status = status;
+                const element = document.getElementById(connectionId);
+                if (!element) return;
+
+                const statusIndicator =
+                    element.querySelector(".status-indicator");
+
+                statusIndicator.className = `status-indicator ${status}`;
+
+                // Hide controls when connection is established
+                const controls = element.querySelector(".connection-controls");
+                if (status === "connected") {
+                    controls.style.display = "none";
+                }
+                // Never show controls again after they are hidden
+            }
+
+            function copyConnectionOffer(connectionId) {
+                const connection = activeConnections.find(
+                    (c) => c.id === connectionId,
+                );
+                if (!connection || !connection.offer) return;
+
+                navigator.clipboard
+                    .writeText(connection.offer)
+                    .then(() => {
+                        notify(
+                            `Connection code for "${connection.name}" copied!`,
+                        );
+                    })
+                    .catch((err) => {
+                        console.error("Copy failed:", err);
+                        notify("Copy failed", "error");
+                    });
+            }
+
+            async function pasteConnectionAnswer(connectionId) {
+                try {
+                    const text = await navigator.clipboard.readText();
+                    if (text && text.trim()) {
+                        await handlePastedAnswer(connectionId, text.trim());
+                    }
+                } catch (err) {
+                    console.error("Paste failed:", err);
+                    notify(
+                        "Paste failed - check permissions",
+                        "error",
+                    );
+                }
+            }
+
+            async function handlePastedAnswer(connectionId, answerText) {
+                const connection = activeConnections.find(
+                    (c) => c.id === connectionId,
+                );
+                if (!connection) return;
+
+                connection.answer = answerText;
+                const textarea = document.getElementById(
+                    `${connection.id}_answer`,
+                );
+                textarea.value = answerText.substring(0, 40) + "...";
+                textarea.classList.remove("empty");
+
+                await handleConnectionAnswer(connectionId, answerText);
+            }
+
+            async function handleConnectionAnswer(connectionId, answerText) {
+                const connection = activeConnections.find(
+                    (c) => c.id === connectionId,
+                );
+                if (!connection || !connection.peerConnection) return;
+
+                try {
+                    const answerJson = JSON.parse(atob(answerText));
+                    await connection.peerConnection.setRemoteDescription(
+                        answerJson,
+                    );
+                    updateConnectionStatus(
+                        connectionId,
+                        "connected",
+                        "Connected!",
+                    );
+                    notify(
+                        `Connection "${connection.name}" established!`,
+                        "success",
+                    );
+                } catch (error) {
+                    console.error("Connection error:", error);
+                    updateConnectionStatus(
+                        connectionId,
+                        "error",
+                        "Invalid answer code",
+                    );
+                    notify("Invalid answer code", "error");
+                }
+            }
+
+            startSharingBtn.addEventListener("click", function () {
+                if (localStream) {
+                    // If sharing is active, use button to switch source
+                    switchSource();
+                } else {
+                    // Otherwise start sharing as usual
+                    startSharing();
+                }
+            });
+            stopSharingBtn.addEventListener("click", stopSharing);
+
+            // Add event listener for FPS options
+            document.querySelectorAll(".fps-option").forEach((option) => {
+                option.addEventListener("click", function () {
+                    document.querySelectorAll(".fps-option").forEach((opt) => {
+                        opt.classList.remove("active");
+                    });
+                    this.classList.add("active");
+                    const newFPS = parseInt(this.dataset.fps);
+                    changeFPS(newFPS);
+                });
+            });
+
+            // Add event listener for name input
+            document
+                .getElementById("newConnectionName")
+                .addEventListener("keypress", (e) => {
+                    if (e.key === "Enter") {
+                        addNewConnection();
+                    }
+                });
+
+            async function startSharing() {
+                try {
+                    notify("Starting screen sharing...", "info");
+
+                    localStream = await navigator.mediaDevices.getDisplayMedia({
+                        video: {
+                            frameRate: { ideal: currentFPS, max: currentFPS },
+                        },
+                        audio: false,
+                    });
+
+                    localStream
+                        .getVideoTracks()[0]
+                        .addEventListener("ended", () => {
+                            stopSharing();
+                            notify("Screen sharing ended", "info");
+                        });
+
+                    video.srcObject = localStream;
+                    placeholder.classList.add("hidden");
+
+                    peerConnection = new RTCPeerConnection({
+                        iceServers: [
+                            { urls: "stun:stun.l.google.com:19302" },
+                            { urls: "stun:stun1.l.google.com:19302" },
+                        ],
+                    });
+
+                    localStream.getTracks().forEach((track) => {
+                        peerConnection.addTrack(track, localStream);
+                    });
+
+                    dataChannel = peerConnection.createDataChannel("drawing");
+                    setupDataChannel();
+
+                    // Create peer connections for all active connections
+                    activeConnections.forEach((connection) => {
+                        if (!connection.peerConnection) {
+                            createConnectionPeerConnection(connection.id);
+                        }
+                    });
+
+                    peerConnection.onicecandidate = (event) => {
+                        if (event.candidate === null) {
+                            // Update all connection offers
+                            activeConnections.forEach((connection) => {
+                                if (connection.peerConnection) {
+                                    const offer = btoa(
+                                        JSON.stringify(
+                                            connection.peerConnection
+                                                .localDescription,
+                                        ),
+                                    );
+                                    connection.offer = offer;
+                                    const input = document.getElementById(
+                                        `${connection.id}_offer`,
+                                    );
+                                    if (input) {
+                                        input.value = offer;
+                                        input.classList.remove("empty");
+                                        document.getElementById(
+                                            `${connection.id}_copyOffer`,
+                                        ).disabled = false;
+                                    }
+                                }
+                            });
+                        }
+                    };
+
+                    peerConnection.onconnectionstatechange = () => {
+                        console.log(
+                            "Connection state:",
+                            peerConnection.connectionState,
+                        );
+                        if (peerConnection.connectionState === "connected") {
+                            notify("Viewer connected!", "success");
+                            startStatsMonitoring(true);
+                            reconnectAttempts = 0;
+
+                            // Update startSharingBtn to "Switch Source"
+                            startSharingBtn.innerHTML =
+                                '<i class="fas fa-sync-alt"></i> Switch Source';
+                            startSharingBtn.disabled = false;
+                        } else if (
+                            peerConnection.connectionState === "disconnected"
+                        ) {
+                            notify("Viewer disconnected", "error");
+                            // Reset startSharingBtn to "Start Sharing"
+                            startSharingBtn.innerHTML =
+                                '<i class="fas fa-play"></i> Start Sharing';
+                            startSharingBtn.style.display = "";
+                            attemptReconnect();
+                        } else if (
+                            peerConnection.connectionState === "failed" ||
+                            peerConnection.connectionState === "closed"
+                        ) {
+                            notify("Viewer has disconnected", "error");
+                            // Reset startSharingBtn to "Start Sharing"
+                            startSharingBtn.innerHTML =
+                                '<i class="fas fa-play"></i> Start Sharing';
+                            startSharingBtn.style.display = "";
+                        }
+                    };
+
+                    const offer = await peerConnection.createOffer();
+                    await peerConnection.setLocalDescription(offer);
+
+                    // Update startSharingBtn to "Switch Source" when sharing starts
+                    startSharingBtn.innerHTML =
+                        '<i class="fas fa-sync-alt"></i> Switch Source';
+                    startSharingBtn.disabled = false;
+                    stopSharingBtn.disabled = false;
+
+                    // Disable mode buttons when sharing is active
+                    updateModeButtons();
+
+                    // Start statistics monitoring immediately for host
+                    startStatsMonitoring(true);
+
+                    notify("Screen sharing started!", "success");
+                } catch (error) {
+                    console.error("Error starting sharing:", error);
+
+                    notify(getErrorMessage(error), "error");
+                }
+            }
+
+            function stopSharing() {
+                if (localStream) {
+                    localStream.getTracks().forEach((track) => track.stop());
+                    localStream = null;
+                }
+
+                if (peerConnection) {
+                    peerConnection.close();
+                    peerConnection = null;
+                }
+
+                // Close all connection peer connections
+                activeConnections.forEach((connection) => {
+                    if (
+                        connection.peerConnection &&
+                        connection.peerConnection.connectionState !== "closed"
+                    ) {
+                        connection.peerConnection.close();
+                    }
+                    connection.peerConnection = null;
+                    connection.dataChannel = null;
+                    connection.offer = "";
+                    connection.answer = "";
+                    updateConnectionStatus(
+                        connection.id,
+                        "disconnected",
+                        "Not connected",
+                    );
+
+                    // Reset UI for connection
+                    const offerInput = document.getElementById(
+                        `${connection.id}_offer`,
+                    );
+                    if (offerInput) {
+                        offerInput.value = "";
+                        offerInput.classList.add("empty");
+                    }
+                    const copyOfferBtn = document.getElementById(
+                        `${connection.id}_copyOffer`,
+                    );
+                    if (copyOfferBtn) {
+                        copyOfferBtn.disabled = true;
+                    }
+                    const answerInput = document.getElementById(
+                        `${connection.id}_answer`,
+                    );
+                    if (answerInput) {
+                        answerInput.value = "";
+                        answerInput.classList.add("empty");
+                    }
+                });
+
+                video.srcObject = null;
+                video.src = "";
+                video.load(); // Force video to clear the last frame
+                placeholder.classList.remove("hidden");
+
+                savedDrawings = [];
+                currentPath = null;
+                remotePaths = {};
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                // Reset startSharingBtn to "Start Sharing" when sharing stops
+                startSharingBtn.innerHTML =
+                    '<i class="fas fa-play"></i> Start Sharing';
+                startSharingBtn.disabled = false;
+                startSharingBtn.style.display = "";
+                stopSharingBtn.disabled = true;
+
+                if (statsInterval) {
+                    clearInterval(statsInterval);
+                    statsInterval = null;
+                }
+
+                notify("Screen sharing stopped", "info");
+                updateModeButtons();
+            }
+
+            async function switchSource() {
+                try {
+                    notify("Switching source...", "info");
+
+                    const newStream =
+                        await navigator.mediaDevices.getDisplayMedia({
+                            video: {
+                                frameRate: {
+                                    ideal: currentFPS,
+                                    max: currentFPS,
+                                },
+                            },
+                            audio: false,
+                        });
+
+                    const newVideoTrack = newStream.getVideoTracks()[0];
+
+                    newVideoTrack.addEventListener("ended", () => {
+                        stopSharing();
+                        notify("Screen sharing ended", "info");
+                    });
+
+                    // Completely replace the local stream
+                    if (localStream) {
+                        localStream
+                            .getTracks()
+                            .forEach((track) => track.stop());
+                    }
+                    localStream = newStream;
+
+                    video.srcObject = newStream;
+
+                    // Update video tracks in all active connections
+                    activeConnections.forEach((connection) => {
+                        if (
+                            connection.peerConnection &&
+                            connection.peerConnection.connectionState ===
+                                "connected"
+                        ) {
+                            const sender = connection.peerConnection
+                                .getSenders()
+                                .find(
+                                    (s) => s.track && s.track.kind === "video",
+                                );
+                            if (sender) {
+                                sender.replaceTrack(newVideoTrack);
+                            }
+                        }
+                    });
+
+                    // Also update main peerConnection if it exists
+                    if (peerConnection) {
+                        const sender = peerConnection
+                            .getSenders()
+                            .find((s) => s.track && s.track.kind === "video");
+                        if (sender) {
+                            await sender.replaceTrack(newVideoTrack);
+                        }
+                    }
+
+                    savedDrawings = [];
+                    currentPath = null;
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                    sendDrawingData({ type: "clear" });
+
+                    notify("Source switched! Drawings cleared.", "success");
+                } catch (error) {
+                    console.error("Error switching source:", error);
+
+                    notify(
+                        "Could not switch source: " + getErrorMessage(error),
+                        "error",
+                    );
+                }
+            }
+
+            async function changeFPS(newFPS) {
+                if (currentFPS === newFPS) return;
+
+                try {
+                    console.log(`Changing FPS from ${currentFPS} to ${newFPS}`);
+
+                    if (localStream) {
+                        const videoTrack = localStream.getVideoTracks()[0];
+                        if (videoTrack) {
+                            const capabilities = videoTrack.getCapabilities();
+                            const settings = videoTrack.getSettings();
+
+                            // Create new constraints
+                            const constraints = {
+                                frameRate: { ideal: newFPS, max: newFPS },
+                            };
+
+                            // Apply new constraints
+                            await videoTrack.applyConstraints(constraints);
+
+                            currentFPS = newFPS;
+
+                            // Update all active connections
+                            updateAllConnectionsWithNewFPS();
+
+                            notify(
+                                `Frame rate changed to ${newFPS} FPS`,
+                                "success",
+                            );
+                            console.log(`FPS changed to ${newFPS}`);
+                        }
+                    }
+                } catch (error) {
+                    console.error("Error changing FPS:", error);
+                    notify("Could not change frame rate", "error");
+                }
+            }
+
+            function updateAllConnectionsWithNewFPS() {
+                // Update all active connections with new FPS
+                activeConnections.forEach((connection) => {
+                    if (
+                        connection.peerConnection &&
+                        connection.peerConnection.connectionState ===
+                            "connected"
+                    ) {
+                        const sender = connection.peerConnection
+                            .getSenders()
+                            .find((s) => s.track && s.track.kind === "video");
+                        if (sender && sender.track) {
+                            sender.track
+                                .applyConstraints({
+                                    frameRate: {
+                                        ideal: currentFPS,
+                                        max: currentFPS,
+                                    },
+                                })
+                                .catch((err) =>
+                                    console.error(
+                                        "Error updating connection FPS:",
+                                        err,
+                                    ),
+                                );
+                        }
+                    }
+                });
+
+                // Update main peerConnection
+                if (peerConnection) {
+                    const sender = peerConnection
+                        .getSenders()
+                        .find((s) => s.track && s.track.kind === "video");
+                    if (sender && sender.track) {
+                        sender.track
+                            .applyConstraints({
+                                frameRate: {
+                                    ideal: currentFPS,
+                                    max: currentFPS,
+                                },
+                            })
+                            .catch((err) =>
+                                console.error(
+                                    "Error updating main connection FPS:",
+                                    err,
+                                ),
+                            );
+                    }
+                }
+            }
+
+            disconnectBtn.addEventListener("click", disconnect);
+
+            async function connectToHost(offerText) {
+                try {
+                    notify("Connecting to host...", "info");
+
+                    peerConnection = new RTCPeerConnection({
+                        iceServers: [
+                            { urls: "stun:stun.l.google.com:19302" },
+                            { urls: "stun:stun1.l.google.com:19302" },
+                        ],
+                    });
+
+                    peerConnection.ondatachannel = (event) => {
+                        dataChannel = event.channel;
+                        setupDataChannel();
+                    };
+
+                    peerConnection.ontrack = (event) => {
+                        video.srcObject = event.streams[0];
+                        placeholder.classList.add("hidden");
+                        toolbar.classList.add("visible");
+
+                        notify("Connected to host!", "success");
+                        disconnectBtn.disabled = false;
+                    };
+
+                    peerConnection.onicecandidate = (event) => {
+                        if (event.candidate === null) {
+                            currentViewerAnswer = btoa(
+                                JSON.stringify(peerConnection.localDescription),
+                            );
+                            document.getElementById(
+                                "viewerAnswerDisplay",
+                            ).value = currentViewerAnswer;
+                            document
+                                .getElementById("viewerAnswerDisplay")
+                                .classList.remove("empty");
+                            document.getElementById("copyAnswerBtn").disabled =
+                                false;
+                            document.getElementById(
+                                "viewerAnswerRow",
+                            ).style.display = "flex";
+                            notify("Send the answer code to the host", "info");
+                        }
+                    };
+
+                    peerConnection.onconnectionstatechange = () => {
+                        console.log(
+                            "Connection state:",
+                            peerConnection.connectionState,
+                        );
+                        if (peerConnection.connectionState === "connected") {
+                            startStatsMonitoring(false);
+                            reconnectAttempts = 0;
+                            viewerOfferSection.style.display = "none";
+                            document.getElementById(
+                                "viewerAnswerRow",
+                            ).style.display = "none";
+                            updateModeButtons();
+                        } else if (
+                            peerConnection.connectionState === "disconnected" ||
+                            peerConnection.connectionState === "failed" ||
+                            peerConnection.connectionState === "closed"
+                        ) {
+                            notify("Host has disconnected", "error");
+                            disconnect();
+                            updateModeButtons();
+                        }
+                    };
+
+                    const offerJson = JSON.parse(atob(offerText));
+                    await peerConnection.setRemoteDescription(offerJson);
+
+                    const answer = await peerConnection.createAnswer();
+                    await peerConnection.setLocalDescription(answer);
+                } catch (error) {
+                    console.error("Connection error:", error);
+
+                    notify("Invalid connection code", "error");
+                }
+            }
+
+            function disconnect() {
+                if (
+                    peerConnection &&
+                    peerConnection.connectionState !== "closed"
+                ) {
+                    peerConnection.close();
+                }
+                peerConnection = null;
+
+                video.srcObject = null;
+                video.src = "";
+                video.load(); // Force video to clear the last frame
+                placeholder.classList.remove("hidden");
+                toolbar.classList.remove("visible");
+
+                savedDrawings = [];
+                currentPath = null;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                viewerOfferSection.style.display = "block"; // Show offer section again
+                document.getElementById("viewerAnswerRow").style.display =
+                    "none";
+
+                currentViewerOffer = "";
+                currentViewerAnswer = "";
+
+                document.getElementById("viewerOfferDisplay").value = "";
+                document
+                    .getElementById("viewerOfferDisplay")
+                    .classList.add("empty");
+
+                document.getElementById("viewerAnswerDisplay").value = "";
+                document
+                    .getElementById("viewerAnswerDisplay")
+                    .classList.add("empty");
+                document.getElementById("copyAnswerBtn").disabled = true;
+
+                disconnectBtn.disabled = true;
+
+                if (statsInterval) {
+                    clearInterval(statsInterval);
+                    statsInterval = null;
+                }
+
+                notify("Disconnected from host", "info");
+                updateModeButtons();
+            }
+
+            function updateModeButtons() {
+                const isConnectionActive =
+                    (currentMode === "host" && localStream) ||
+                    (currentMode === "viewer" &&
+                        peerConnection &&
+                        peerConnection.connectionState === "connected");
+
+                hostModeBtn.disabled = isConnectionActive;
+                viewerModeBtn.disabled = isConnectionActive;
+
+                if (isConnectionActive) {
+                    hostModeBtn.style.opacity = "0.5";
+                    hostModeBtn.style.cursor = "not-allowed";
+                    viewerModeBtn.style.opacity = "0.5";
+                    viewerModeBtn.style.cursor = "not-allowed";
+                } else {
+                    hostModeBtn.style.opacity = "1";
+                    hostModeBtn.style.cursor = "pointer";
+                    viewerModeBtn.style.opacity = "1";
+                    viewerModeBtn.style.cursor = "pointer";
+                }
+            }
+
+            function setupDataChannel() {
+                if (!dataChannel) return;
+
+                dataChannel.onopen = () => {
+                    console.log("Data channel opened");
+                };
+
+                dataChannel.onmessage = (event) => {
+                    try {
+                        const data = JSON.parse(event.data);
+
+                        // Handle color assignments from host
+                        if (data.type === "assignColor") {
+                            console.log(
+                                "Viewer received color assignment:",
+                                data.color,
+                            );
+                            viewerSelfColor = data.color;
+                            console.log(
+                                "Viewer ACCEPTED color assignment:",
+                                data.color,
+                            );
+                            console.log(
+                                "Viewer using assigned color:",
+                                viewerSelfColor,
+                                "for drawing",
+                            );
+                            return; // Handle color assignment separately from drawing
+                        }
+
+                        handleRemoteDrawing(data);
+                    } catch (error) {
+                        console.error(
+                            "Error handling message:",
+                            error,
+                        );
+                    }
+                };
+            }
+
+            function createConnectionPeerConnection(connectionId) {
+                const connection = activeConnections.find(
+                    (c) => c.id === connectionId,
+                );
+                if (!connection) return;
+
+                connection.peerConnection = new RTCPeerConnection({
+                    iceServers: [
+                        { urls: "stun:stun.l.google.com:19302" },
+                        { urls: "stun:stun1.l.google.com:19302" },
+                    ],
+                });
+
+                // Add tracks from localStream if it exists
+                if (localStream) {
+                    localStream.getTracks().forEach((track) => {
+                        connection.peerConnection.addTrack(track, localStream);
+                    });
+                }
+
+                // Create data channel for drawing
+                connection.dataChannel =
+                    connection.peerConnection.createDataChannel("drawing");
+                setupConnectionDataChannel(connection);
+
+                connection.peerConnection.onicecandidate = (event) => {
+                    if (event.candidate === null && localStream) {
+                        // Offer is ready, update UI
+                        const offer = btoa(
+                            JSON.stringify(
+                                connection.peerConnection.localDescription,
+                            ),
+                        );
+                        connection.offer = offer;
+                        const input = document.getElementById(
+                            `${connectionId}_offer`,
+                        );
+                        if (input) {
+                            input.value = offer;
+                            input.classList.remove("empty");
+                            document.getElementById(
+                                `${connectionId}_copyOffer`,
+                            ).disabled = false;
+                        }
+                        updateConnectionStatus(
+                            connectionId,
+                            "ready",
+                            "Ready for connection",
+                        );
+                    }
+                };
+
+                connection.peerConnection.onconnectionstatechange = () => {
+                    console.log(
+                        `Connection ${connectionId} state:`,
+                        connection.peerConnection.connectionState,
+                    );
+                    if (
+                        connection.peerConnection.connectionState ===
+                        "connected"
+                    ) {
+                        updateConnectionStatus(
+                            connectionId,
+                            "connected",
+                            "Connected!",
+                        );
+                        notify(
+                            `Connection "${connection.name}" established!`,
+                            "success",
+                        );
+                    } else if (
+                        connection.peerConnection.connectionState ===
+                        "disconnected"
+                    ) {
+                        updateConnectionStatus(
+                            connectionId,
+                            "disconnected",
+                            "Disconnected",
+                        );
+                        notify(
+                            `Connection "${connection.name}" disconnected`,
+                            "error",
+                        );
+                    } else if (
+                        connection.peerConnection.connectionState ===
+                            "failed" ||
+                        connection.peerConnection.connectionState === "closed"
+                    ) {
+                        updateConnectionStatus(
+                            connectionId,
+                            "disconnected",
+                            "Connection aborted",
+                        );
+                    }
+                };
+
+                // Create offer
+                connection.peerConnection
+                    .createOffer()
+                    .then((offer) =>
+                        connection.peerConnection.setLocalDescription(offer),
+                    )
+                    .catch((error) =>
+                        console.error("Error creating offer:", error),
+                    );
+            }
+
+            function setupConnectionDataChannel(connection) {
+                if (!connection.dataChannel) return;
+
+                connection.dataChannel.onopen = () => {
+                    console.log(`Data channel opened for ${connection.name}`);
+                };
+
+                connection.dataChannel.onmessage = (event) => {
+                    try {
+                        const data = JSON.parse(event.data);
+                        handleRemoteDrawing(data);
+                    } catch (error) {
+                        console.error(
+                            "Error handling message:",
+                            error,
+                        );
+                    }
+                };
+            }
+
+            function sendDrawingData(data) {
+                let dataWithColor;
+
+                if (currentMode === "host") {
+                    // Host always uses green color
+                    dataWithColor = {
+                        ...data,
+                        color: connectionColors[0], // Host color
+                    };
+                } else {
+                    // Viewer uses their own saved color
+                    dataWithColor = {
+                        ...data,
+                        color: viewerSelfColor,
+                    };
+                }
+
+                if (dataChannel && dataChannel.readyState === "open") {
+                    dataChannel.send(JSON.stringify(dataWithColor));
+                }
+
+                // Also send to all active connections
+                broadcastDrawingData(dataWithColor);
+            }
+
+            function broadcastDrawingData(data, excludeConnectionId = null) {
+                // Send drawing data to all connections except the one that sent the original
+                activeConnections.forEach((connection) => {
+                    if (
+                        connection.id !== excludeConnectionId &&
+                        connection.dataChannel &&
+                        connection.dataChannel.readyState === "open"
+                    ) {
+                        // Send original data with original color preserved
+                        connection.dataChannel.send(JSON.stringify(data));
+                    }
+                });
+            }
+
+            function createConnectionPeerConnection(connectionId) {
+                const connection = activeConnections.find(
+                    (c) => c.id === connectionId,
+                );
+                if (!connection) return;
+
+                connection.peerConnection = new RTCPeerConnection({
+                    iceServers: [
+                        { urls: "stun:stun.l.google.com:19302" },
+                        { urls: "stun:stun1.l.google.com:19302" },
+                    ],
+                });
+
+                // Add tracks from localStream if it exists
+                if (localStream) {
+                    localStream.getTracks().forEach((track) => {
+                        connection.peerConnection.addTrack(track, localStream);
+                    });
+                }
+
+                // Create data channel for drawing
+                connection.dataChannel =
+                    connection.peerConnection.createDataChannel("drawing");
+                setupConnectionDataChannel(connection);
+
+                connection.peerConnection.onicecandidate = (event) => {
+                    if (event.candidate === null) {
+                        // Offer is ready, update UI
+                        const offer = btoa(
+                            JSON.stringify(
+                                connection.peerConnection.localDescription,
+                            ),
+                        );
+                        connection.offer = offer;
+                        const input = document.getElementById(
+                            `${connectionId}_offer`,
+                        );
+                        if (input) {
+                            input.value = offer;
+                            input.classList.remove("empty");
+                            document.getElementById(
+                                `${connectionId}_copyOffer`,
+                            ).disabled = false;
+                        }
+                        updateConnectionStatus(
+                            connectionId,
+                            "ready",
+                            "Ready for connection",
+                        );
+                    }
+                };
+
+                connection.peerConnection.onconnectionstatechange = () => {
+                    console.log(
+                        `Connection ${connectionId} state:`,
+                        connection.peerConnection.connectionState,
+                    );
+                    if (
+                        connection.peerConnection.connectionState ===
+                        "connected"
+                    ) {
+                        // Send color assignment when connection is established
+                        if (
+                            connection.dataChannel &&
+                            connection.dataChannel.readyState === "open"
+                        ) {
+                            connection.dataChannel.send(
+                                JSON.stringify({
+                                    type: "assignColor",
+                                    color: connection.color,
+                                }),
+                            );
+                        }
+                        updateConnectionStatus(
+                            connectionId,
+                            "connected",
+                            "Connected!",
+                        );
+                        notify(
+                            `Connection "${connection.name}" established!`,
+                            "success",
+                        );
+                        updateModeButtons();
+                    } else if (
+                        connection.peerConnection.connectionState ===
+                        "disconnected"
+                    ) {
+                        updateConnectionStatus(
+                            connectionId,
+                            "error",
+                            "Disconnected",
+                        );
+                        notify(
+                            `Connection "${connection.name}" disconnected`,
+                            "error",
+                        );
+                        updateModeButtons();
+                    } else if (
+                        connection.peerConnection.connectionState ===
+                            "failed" ||
+                        connection.peerConnection.connectionState === "closed"
+                    ) {
+                        updateConnectionStatus(
+                            connectionId,
+                            "error",
+                            "Connection aborted",
+                        );
+                        updateModeButtons();
+                    }
+                };
+
+                // Create offer if localStream exists
+                if (localStream) {
+                    connection.peerConnection
+                        .createOffer()
+                        .then((offer) =>
+                            connection.peerConnection.setLocalDescription(
+                                offer,
+                            ),
+                        )
+                        .then(() => {
+                            // Offer is now set, onicecandidate will be triggered
+                            console.log(`Offer created for ${connection.name}`);
+                            updateModeButtons();
+                        })
+                        .catch((error) =>
+                            console.error("Error creating offer:", error),
+                        );
+                }
+            }
+
+            function setupConnectionDataChannel(connection) {
+                if (!connection.dataChannel) return;
+
+                connection.dataChannel.onopen = () => {
+                    console.log(`Data channel opened for ${connection.name}`);
+
+                    // Send color assignment immediately when data channel opens
+                    if (connection.dataChannel.readyState === "open") {
+                        connection.dataChannel.send(
+                            JSON.stringify({
+                                type: "assignColor",
+                                color: connection.color,
+                            }),
+                        );
+                    }
+                };
+
+                connection.dataChannel.onmessage = (event) => {
+                    try {
+                        const data = JSON.parse(event.data);
+
+                        // If this is a color assignment message
+                        if (
+                            data.type === "assignColor" &&
+                            currentMode === "viewer"
+                        ) {
+                            viewerSelfColor = data.color;
+                            return;
+                        }
+
+                        // If this is a color assignment message
+                        if (
+                            data.type === "assignColor" &&
+                            currentMode === "viewer"
+                        ) {
+                            viewerSelfColor = data.color;
+                            return;
+                        }
+
+                        // Handle data directly with the included color
+                        handleRemoteDrawing(data, connection.id);
+
+                        // Broadcast original data with original color to all other connections
+                        broadcastDrawingData(data, connection.id);
+                    } catch (error) {
+                        console.error(
+                            "Error handling message:",
+                            error,
+                        );
+                    }
+                };
+            }
+
+            function setupCanvas() {
+                resizeCanvas();
+
+                ctx.strokeStyle = connectionColors[0]; // Host color
+                ctx.lineWidth = 3;
+                ctx.lineCap = "round";
+                ctx.lineJoin = "round";
+
+                window.addEventListener("resize", resizeCanvas);
+
+                video.addEventListener("loadedmetadata", resizeCanvas);
+            }
+
+            function resizeCanvas() {
+                const oldWidth = canvas.width;
+                const oldHeight = canvas.height;
+
+                canvas.width = videoContainer.clientWidth;
+                canvas.height = videoContainer.clientHeight;
+
+                ctx.strokeStyle = connectionColors[0]; // Host color
+                ctx.lineWidth = 3;
+                ctx.lineCap = "round";
+                ctx.lineJoin = "round";
+
+                redrawAllPaths();
+            }
+
+            function redrawAllPaths() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                savedDrawings.forEach((path) => {
+                    ctx.strokeStyle = path.color || connectionColors[0];
+                    ctx.lineWidth = 3;
+                    ctx.lineCap = "round";
+                    ctx.lineJoin = "round";
+                    ctx.beginPath();
+
+                    path.points.forEach((point, index) => {
+                        const canvasCoords = videoToCanvasCoords(
+                            point.x,
+                            point.y,
+                        );
+
+                        if (index === 0) {
+                            ctx.moveTo(canvasCoords.x, canvasCoords.y);
+                        } else {
+                            ctx.lineTo(canvasCoords.x, canvasCoords.y);
+                        }
+                    });
+
+                    ctx.stroke();
+                });
+            }
+
+            function getVideoRect() {
+                if (!video.videoWidth || !video.videoHeight) {
+                    return {
+                        x: 0,
+                        y: 0,
+                        width: canvas.width,
+                        height: canvas.height,
+                    };
+                }
+
+                const canvasAspect = canvas.width / canvas.height;
+                const videoAspect = video.videoWidth / video.videoHeight;
+
+                let videoRenderWidth, videoRenderHeight, videoX, videoY;
+
+                if (videoAspect > canvasAspect) {
+                    videoRenderWidth = canvas.width;
+                    videoRenderHeight = canvas.width / videoAspect;
+                    videoX = 0;
+                    videoY = (canvas.height - videoRenderHeight) / 2;
+                } else {
+                    videoRenderHeight = canvas.height;
+                    videoRenderWidth = canvas.height * videoAspect;
+                    videoX = (canvas.width - videoRenderWidth) / 2;
+                    videoY = 0;
+                }
+
+                return {
+                    x: videoX,
+                    y: videoY,
+                    width: videoRenderWidth,
+                    height: videoRenderHeight,
+                };
+            }
+
+            function canvasToVideoCoords(canvasX, canvasY) {
+                const videoRect = getVideoRect();
+                const x = (canvasX - videoRect.x) / videoRect.width;
+                const y = (canvasY - videoRect.y) / videoRect.height;
+                return { x, y };
+            }
+
+            function videoToCanvasCoords(videoX, videoY) {
+                const videoRect = getVideoRect();
+                const x = videoRect.x + videoX * videoRect.width;
+                const y = videoRect.y + videoY * videoRect.height;
+                return { x, y };
+            }
+
+            pointerBtn.addEventListener("click", togglePointer);
+            drawBtn.addEventListener("click", toggleDraw);
+            clearBtn.addEventListener("click", clearDrawing);
+
+            function togglePointer() {
+                isPointerMode = !isPointerMode;
+                pointerBtn.classList.toggle("active", isPointerMode);
+
+                if (isPointerMode) {
+                    isDrawMode = false;
+                    drawBtn.classList.remove("active");
+                    canvas.classList.remove("active");
+                    video.style.cursor = "pointer";
+                    notify("Pointer mode activated", "success");
+                } else {
+                    video.style.cursor = "default";
+                }
+
+                showToolbar();
+            }
+
+            function toggleDraw() {
+                isDrawMode = !isDrawMode;
+                drawBtn.classList.toggle("active", isDrawMode);
+                canvas.classList.toggle("active", isDrawMode);
+
+                if (isDrawMode) {
+                    isPointerMode = false;
+                    pointerBtn.classList.remove("active");
+                    video.style.cursor = "default";
+                    // Use correct color based on mode
+                    if (currentMode === "host") {
+                        ctx.strokeStyle = connectionColors[0]; // Host color
+                    } else {
+                        // Viewer uses their own saved color
+                        ctx.strokeStyle = viewerSelfColor;
+                    }
+                    ctx.lineWidth = 3;
+                    notify("Drawing mode activated", "success");
+                }
+
+                showToolbar();
+            }
+
+            function clearDrawing() {
+                savedDrawings = [];
+                currentPath = null;
+
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.strokeStyle = connectionColors[0]; // Host color
+                ctx.lineWidth = 3;
+                ctx.lineCap = "round";
+                ctx.lineJoin = "round";
+                sendDrawingData({ type: "clear" });
+                notify("Drawing cleared", "success");
+
+                showToolbar();
+            }
+
+            canvas.addEventListener("mousedown", (e) => {
+                if (!isDrawMode) return;
+                isDrawing = true;
+
+                const canvasX = e.offsetX * (canvas.width / canvas.clientWidth);
+                const canvasY =
+                    e.offsetY * (canvas.height / canvas.clientHeight);
+
+                const videoCoords = canvasToVideoCoords(canvasX, canvasY);
+
+                // Use correct color based on mode
+                let color;
+                if (currentMode === "host") {
+                    color = connectionColors[0]; // Host color
+                } else {
+                    // Viewer uses their own saved color
+                    color = viewerSelfColor;
+                }
+                currentPath = {
+                    color: color,
+                    points: [{ x: videoCoords.x, y: videoCoords.y }],
+                };
+
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(canvasX, canvasY);
+
+                sendDrawingData({
+                    type: "start",
+                    x: videoCoords.x,
+                    y: videoCoords.y,
+                });
+            });
+
+            canvas.addEventListener("mousemove", (e) => {
+                if (!isDrawing || !isDrawMode) return;
+
+                const canvasX = e.offsetX * (canvas.width / canvas.clientWidth);
+                const canvasY =
+                    e.offsetY * (canvas.height / canvas.clientHeight);
+
+                const videoCoords = canvasToVideoCoords(canvasX, canvasY);
+
+                if (currentPath) {
+                    currentPath.points.push({
+                        x: videoCoords.x,
+                        y: videoCoords.y,
+                    });
+                }
+
+                ctx.lineTo(canvasX, canvasY);
+                ctx.stroke();
+
+                sendDrawingData({
+                    type: "draw",
+                    x: videoCoords.x,
+                    y: videoCoords.y,
+                });
+            });
+
+            canvas.addEventListener("mouseup", () => {
+                if (!isDrawMode) return;
+                isDrawing = false;
+
+                if (currentPath && currentPath.points.length > 0) {
+                    savedDrawings.push(currentPath);
+                    currentPath = null;
+                }
+
+                sendDrawingData({ type: "end" });
+            });
+
+            canvas.addEventListener("mouseleave", () => {
+                if (!isDrawMode) return;
+                isDrawing = false;
+
+                if (currentPath && currentPath.points.length > 0) {
+                    savedDrawings.push(currentPath);
+                    currentPath = null;
+                }
+
+                sendDrawingData({ type: "end" });
+            });
+
+            function handleRemoteDrawing(data, connectionId = null) {
+                if (data.type === "clear") {
+                    savedDrawings = [];
+                    remotePaths = {};
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.strokeStyle = connectionColors[0]; // Host color
+                    ctx.lineWidth = 3;
+                    ctx.lineCap = "round";
+                    ctx.lineJoin = "round";
+                } else if (data.type === "start") {
+                    // Use color from data directly
+                    const color = data.color || connectionColors[1]; // Use color from data or fallback
+
+                    // Create a unique path for each connection
+                    remotePaths[connectionId] = {
+                        color: color,
+                        points: [{ x: data.x, y: data.y }],
+                    };
+
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = 3;
+                    ctx.lineCap = "round";
+                    ctx.lineJoin = "round";
+                    ctx.beginPath();
+
+                    const canvasCoords = videoToCanvasCoords(data.x, data.y);
+                    ctx.moveTo(canvasCoords.x, canvasCoords.y);
+                } else if (data.type === "draw") {
+                    const remotePath = remotePaths[connectionId];
+                    if (remotePath) {
+                        remotePath.points.push({ x: data.x, y: data.y });
+                    }
+
+                    const canvasCoords = videoToCanvasCoords(data.x, data.y);
+                    ctx.lineTo(canvasCoords.x, canvasCoords.y);
+                    ctx.stroke();
+                } else if (data.type === "end") {
+                    const remotePath = remotePaths[connectionId];
+                    if (remotePath && remotePath.points.length > 0) {
+                        savedDrawings.push(remotePath);
+                        delete remotePaths[connectionId];
+                    }
+                }
+            }
+
+            zoomInBtn.addEventListener("click", () => zoomVideo(0.1));
+            zoomOutBtn.addEventListener("click", () => zoomVideo(-0.1));
+            resetZoomBtn.addEventListener("click", resetZoom);
+
+            function zoomVideo(delta) {
+                currentZoom = Math.max(1, Math.min(3, currentZoom + delta));
+
+                constrainPan();
+                updateVideoTransform();
+                showZoomInfo();
+
+                showToolbar();
+            }
+
+            function resetZoom() {
+                currentZoom = 1;
+                panX = 0;
+                panY = 0;
+                updateVideoTransform();
+                showZoomInfo();
+                video.classList.remove("pannable");
+                notify("Zoom reset", "success");
+
+                showToolbar();
+            }
+
+            function constrainPan() {
+                if (currentZoom <= 1) {
+                    panX = 0;
+                    panY = 0;
+                    return;
+                }
+
+                const maxPanX = (video.clientWidth * (currentZoom - 1)) / 2;
+                const maxPanY = (video.clientHeight * (currentZoom - 1)) / 2;
+
+                panX = Math.max(-maxPanX, Math.min(maxPanX, panX));
+                panY = Math.max(-maxPanY, Math.min(maxPanY, panY));
+            }
+
+            function updateVideoTransform() {
+                const adjustedPanX = panX / currentZoom;
+                const adjustedPanY = panY / currentZoom;
+                const transform = `scale(${currentZoom}) translate(${adjustedPanX}px, ${adjustedPanY}px)`;
+
+                video.style.transform = transform;
+
+                canvas.style.transform = transform;
+
+                video.classList.toggle("pannable", currentZoom > 1);
+            }
+
+            function showZoomInfo() {
+                zoomInfo.textContent = `Zoom: ${Math.round(currentZoom * 100)}%`;
+                zoomInfo.classList.add("show");
+                setTimeout(() => {
+                    zoomInfo.classList.remove("show");
+                }, 1500);
+            }
+
+            video.addEventListener("mousedown", (e) => {
+                if (currentZoom <= 1 || isDrawMode) return;
+                isPanning = true;
+                startPanX = e.clientX - panX;
+                startPanY = e.clientY - panY;
+            });
+
+            video.addEventListener("mousemove", (e) => {
+                if (!isPanning) return;
+                panX = e.clientX - startPanX;
+                panY = e.clientY - startPanY;
+
+                constrainPan();
+                updateVideoTransform();
+            });
+
+            video.addEventListener("mouseup", () => {
+                isPanning = false;
+            });
+
+            video.addEventListener("mouseleave", () => {
+                isPanning = false;
+            });
+
+            video.addEventListener("wheel", (e) => {
+                e.preventDefault();
+                const delta = e.deltaY > 0 ? -0.1 : 0.1;
+                zoomVideo(delta);
+            });
+
+            fullscreenBtn.addEventListener("click", toggleFullscreen);
+            document.addEventListener("fullscreenchange", () => {
+                updateFullscreenButton();
+                setTimeout(() => {
+                    resizeCanvas();
+                    updateVideoTransform();
+                }, 50);
+            });
+
+            document.addEventListener("keydown", handleKeyboard);
+
+            document.addEventListener("keydown", (e) => {
+                if (e.key === "+" || e.key === "=") {
+                    e.preventDefault();
+                    zoomVideo(0.1);
+                } else if (e.key === "-" || e.key === "_") {
+                    e.preventDefault();
+                    zoomVideo(-0.1);
+                } else if (e.key === "0") {
+                    e.preventDefault();
+                    resetZoom();
+                }
+            });
+
+            function startStatsMonitoring(isHost) {
+                if (statsInterval) clearInterval(statsInterval);
+
+                statsInterval = setInterval(async () => {
+                    // For host, use first active connection for statistics
+                    let targetPeerConnection = peerConnection;
+
+                    if (isHost && activeConnections.length > 0) {
+                        // Find first connection that is connected or connecting
+                        const connectedConnection = activeConnections.find(
+                            (conn) =>
+                                conn.peerConnection &&
+                                (conn.peerConnection.connectionState ===
+                                    "connected" ||
+                                    conn.peerConnection.connectionState ===
+                                        "connecting"),
+                        );
+                        if (connectedConnection) {
+                            targetPeerConnection =
+                                connectedConnection.peerConnection;
+                        }
+                    }
+
+                    if (!targetPeerConnection) return;
+
+                    try {
+                        const stats = await targetPeerConnection.getStats();
+                        let bitrate = 0;
+                        let fps = 0;
+                        let latency = 0;
+                        let packetLoss = 0;
+
+                        stats.forEach((report) => {
+                            if (
+                                report.type === "outbound-rtp" &&
+                                report.kind === "video" &&
+                                isHost
+                            ) {
+                                const now = Date.now();
+                                const bytes = report.bytesSent;
+                                const timeDiff = (now - lastStatsTime) / 1000;
+
+                                if (lastBytesSent > 0) {
+                                    bitrate = Math.round(
+                                        ((bytes - lastBytesSent) * 8) /
+                                            timeDiff /
+                                            1000,
+                                    );
+                                }
+
+                                lastBytesSent = bytes;
+                                lastStatsTime = now;
+                                fps = report.framesPerSecond || 0;
+                            }
+
+                            if (
+                                report.type === "inbound-rtp" &&
+                                report.kind === "video" &&
+                                !isHost
+                            ) {
+                                const now = Date.now();
+                                const bytes = report.bytesReceived;
+                                const timeDiff = (now - lastStatsTime) / 1000;
+
+                                if (lastBytesReceived > 0) {
+                                    bitrate = Math.round(
+                                        ((bytes - lastBytesReceived) * 8) /
+                                            timeDiff /
+                                            1000,
+                                    );
+                                }
+
+                                lastBytesReceived = bytes;
+                                lastStatsTime = now;
+                                fps = report.framesPerSecond || 0;
+
+                                if (
+                                    report.packetsLost &&
+                                    report.packetsReceived
+                                ) {
+                                    packetLoss = (
+                                        (report.packetsLost /
+                                            (report.packetsReceived +
+                                                report.packetsLost)) *
+                                        100
+                                    ).toFixed(2);
+                                }
+                            }
+
+                            if (
+                                report.type === "candidate-pair" &&
+                                report.state === "succeeded"
+                            ) {
+                                latency = report.currentRoundTripTime
+                                    ? Math.round(
+                                          report.currentRoundTripTime * 1000,
+                                      )
+                                    : 0;
+                            }
+                        });
+
+                        updateStatsUI(
+                            bitrate,
+                            fps,
+                            latency,
+                            packetLoss,
+                            isHost,
+                        );
+                    } catch (error) {
+                        console.error("Stats error:", error);
+                    }
+                }, 1000);
+            }
+
+            function updateStatsUI(bitrate, fps, latency, packetLoss, isHost) {
+                const prefix = isHost ? "host" : "viewer";
+
+                const bitrateEl = document.getElementById(`${prefix}Bitrate`);
+                const fpsEl = document.getElementById(`${prefix}Fps`);
+                const latencyEl = document.getElementById(`${prefix}Latency`);
+                const packetLossEl = document.getElementById(
+                    `${prefix}PacketLoss`,
+                );
+
+                if (bitrateEl) {
+                    bitrateEl.textContent = `${bitrate} kbps`;
+                    bitrateEl.className = "stat-value";
+                    if (bitrate > 2000) bitrateEl.classList.add("good");
+                    else if (bitrate > 1000) bitrateEl.classList.add("warning");
+                    else bitrateEl.classList.add("bad");
+                }
+
+                if (fpsEl) {
+                    fpsEl.textContent = `${fps} fps`;
+                    fpsEl.className = "stat-value";
+                    if (fps >= 25) fpsEl.classList.add("good");
+                    else if (fps >= 15) fpsEl.classList.add("warning");
+                    else fpsEl.classList.add("bad");
+                }
+
+                if (latencyEl) {
+                    latencyEl.textContent = `${latency} ms`;
+                    latencyEl.className = "stat-value";
+                    if (latency < 100) latencyEl.classList.add("good");
+                    else if (latency < 200) latencyEl.classList.add("warning");
+                    else latencyEl.classList.add("bad");
+                }
+
+                if (packetLossEl) {
+                    packetLossEl.textContent = `${packetLoss} %`;
+                    packetLossEl.className = "stat-value";
+                    if (packetLoss < 1) packetLossEl.classList.add("good");
+                    else if (packetLoss < 5)
+                        packetLossEl.classList.add("warning");
+                    else packetLossEl.classList.add("bad");
+                }
+            }
+
+            function copyAnswerCompact() {
+                if (!currentViewerAnswer) return;
+                navigator.clipboard
+                    .writeText(currentViewerAnswer)
+                    .then(() => {
+                        notify("Answer code copied!");
+                    })
+                    .catch((err) => {
+                        console.error("Copy failed:", err);
+                        notify("Copy failed", "error");
+                    });
+            }
+
+            async function pasteOfferCompact() {
+                try {
+                    const text = await navigator.clipboard.readText();
+                    if (text && text.trim()) {
+                        currentViewerOffer = text.trim();
+                        document.getElementById("viewerOfferDisplay").value =
+                            text.substring(0, 40) + "...";
+                        document
+                            .getElementById("viewerOfferDisplay")
+                            .classList.remove("empty");
+                        await connectToHost(text.trim());
+                    }
+                } catch (err) {
+                    console.error("Paste failed:", err);
+                    notify(
+                        "Paste failed - check permissions",
+                        "error",
+                    );
+                }
+            }
+
+            function copyCode(textareaId, indicatorId) {
+                const textarea = document.getElementById(textareaId);
+                textarea.select();
+                document.execCommand("copy");
+
+                const indicator = document.getElementById(indicatorId);
+                indicator.classList.add("show");
+                setTimeout(() => {
+                    indicator.classList.remove("show");
+                }, 2000);
+
+                notify("Copied to clipboard!");
+            }
+
+            function notify(message, type = "success") {
+                const notification = document.getElementById("notification");
+                const notificationText =
+                    document.getElementById("notificationText");
+                const icon = notification.querySelector("i");
+
+                notificationText.textContent = message;
+                notification.className = `notification ${type}`;
+
+                if (type === "success") {
+                    icon.className = "fas fa-check-circle";
+                } else if (type === "error") {
+                    icon.className = "fas fa-exclamation-circle";
+                }
+
+                notification.classList.add("show");
+
+                setTimeout(() => {
+                    notification.classList.remove("show");
+                }, 3000);
+            }
+
+            function attemptReconnect() {
+                if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+                    notify("Reconnection failed", "error");
+                    return;
+                }
+
+                reconnectAttempts++;
+                const delay = Math.min(
+                    1000 * Math.pow(2, reconnectAttempts),
+                    10000,
+                );
+
+                setTimeout(() => {
+                    notify(
+                        `Reconnection attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS}...`,
+                    );
+                }, delay);
+            }
+
+            function toggleFullscreen() {
+                if (!document.fullscreenElement) {
+                    videoContainer.requestFullscreen();
+                } else {
+                    document.exitFullscreen();
+                }
+
+                showToolbar();
+            }
+
+            function updateFullscreenButton() {
+                const icon = fullscreenBtn.querySelector("i");
+                if (document.fullscreenElement) {
+                    icon.className = "fas fa-compress";
+                } else {
+                    icon.className = "fas fa-expand";
+                }
+            }
+
+            function handleKeyboard(e) {
+                // Ignore keyboard shortcuts when user is typing in input/textarea
+                const activeElement = document.activeElement;
+                if (
+                    activeElement.tagName === "INPUT" ||
+                    activeElement.tagName === "TEXTAREA"
+                ) {
+                    return;
+                }
+
+                if (e.key === "F11") {
+                    e.preventDefault();
+                    toggleFullscreen();
+                }
+
+                if (e.key === "Escape" && document.fullscreenElement) {
+                    document.exitFullscreen();
+                }
+
+                if (e.key === "h" || e.key === "H") {
+                    e.preventDefault();
+                    toggleUI();
+                }
+
+                if (currentMode !== "host") return;
+
+                if (e.key === "p" || e.key === "P") {
+                    e.preventDefault();
+                    togglePointer();
+                }
+
+                if (e.key === "r" || e.key === "R") {
+                    e.preventDefault();
+                    toggleDraw();
+                }
+
+                if (e.key === "c" || e.key === "C") {
+                    e.preventDefault();
+                    clearDrawing();
+                }
+            }
+
+            function showHelp() {
+                document.getElementById("helpModal").classList.add("show");
+            }
+
+            function closeHelp() {
+                document.getElementById("helpModal").classList.remove("show");
+            }
+
+            function getErrorMessage(error) {
+                const errorMap = {
+                    NotAllowedError:
+                        "You canceled screen sharing or denied access",
+                    NotFoundError: "No screen to share found",
+                    NotReadableError: "Screen could not be read",
+                    OverconstrainedError: "Quality settings not supported",
+                    TypeError: "A technical error occurred",
+                    InvalidStateError: "Invalid state",
+                    InvalidAccessError: "Invalid access",
+                    AbortError: "Operation aborted",
+                    NetworkError: "Network error",
+                    TimeoutError: "Timeout",
+                };
+
+                return (
+                    errorMap[error.name] ||
+                    error.message ||
+                    "An unknown error occurred"
+                );
+            }
+
+            // Add paste event listener for input fields
+            document
+                .getElementById("viewerOfferDisplay")
+                .addEventListener("paste", async (e) => {
+                    e.preventDefault();
+                    const text = e.clipboardData.getData("text");
+                    if (text && text.trim()) {
+                        currentViewerOffer = text.trim();
+                        document.getElementById("viewerOfferDisplay").value =
+                            text.substring(0, 40) + "...";
+                        document
+                            .getElementById("viewerOfferDisplay")
+                            .classList.remove("empty");
+                        await connectToHost(text.trim());
+                    }
+                });
+
+            setupCanvas();
+        </script>
+    </body>
+</html>
